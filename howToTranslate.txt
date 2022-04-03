@@ -1,0 +1,35 @@
+CakeML to HOL4
+True --> T
+False --> F
+Greater --> GREATER
+Equal --> EQUAL
+
+(*
+old_translation:
+ByteArray.from_list |-->  ByteArray__from_list
+Word8.fromInt |--> i2w
+Int.div |--> /
+*)
+
+Example:
+
+tBoolScript.sml
+
+Definition Bool__True_def:
+  Bool__True = T
+End
+
+Definition Bool__False_def:
+  Bool__False = F
+End
+
+tOrderingScript.sml
+
+Definition Ordering__Equal_def:
+  Ordering__Equal = EQUAL
+End 
+
+Definition Ordering__Greater_def:
+  Ordering__Greater = GREATER
+End
+

@@ -1,0 +1,295 @@
+# Change this directory if necessary  -- or
+# provide the directory for your machine on the make command-line, e.g.
+# make -n   CAKE_DIR="/someOtherLocation/cake-x64-64"
+CAKE_DIR = ~/cake-x64-64
+CAKEC = $(CAKE_DIR)/cake
+BASIS = $(CAKE_DIR)/basis_ffi.c
+
+OS ?= $(shell uname)
+ifeq ($(OS),Darwin)
+	# These options avoid linker warnings on macOS
+	LDFLAGS += -Wl,-no_pie
+endif
+
+DEBUG = true
+ifeq ($(DEBUG), true)
+	CFLAGS += -ggdb3
+else
+	CFLAGS = -DNDEBUG
+endif
+
+CC = gcc
+# CFLAGS =
+
+ROOT_PATH = .
+
+UTILS_PATH = $(ROOT_PATH)/primitive/utils
+UTILS_LIST = $(UTILS_PATH)/tException.sml $(UTILS_PATH)/tResult.sml $(UTILS_PATH)/tByteArray.sml \
+				$(UTILS_PATH)/tSet.sml $(UTILS_PATH)/tSerialization.sml \
+				$(UTILS_PATH)/tBigEndian.sml \
+				$(UTILS_PATH)/tRandom.sml \
+				$(UTILS_PATH)/tGuid.sml $(UTILS_PATH)/tHex.sml \
+				$(UTILS_PATH)/tGenericExtension.sml $(UTILS_PATH)/math/tMath.sml \
+				$(UTILS_PATH)/tNetworkAddress.sml $(UTILS_PATH)/tArgp.sml
+
+CRYPTO_PATH = $(ROOT_PATH)/crypto
+CRYPTO_LIST = $(CRYPTO_PATH)/tHashFunction.sml $(CRYPTO_PATH)/tKeypair.sml $(CRYPTO_PATH)/tNoise.sml
+
+ENGINE_DIR = $(CRYPTO_PATH)/ffi/engine
+ENGINE_BUILD_DIR = $(ENGINE_DIR)/build
+
+# Settings for openssl
+OPENSSL_ROOT_DIR = /usr/local/opt/openssl
+OPENSSL_LIBRARIES = /usr/local/opt/openssl/lib
+OPENSSL_ENGINES_DIR = /usr/local/opt/openssl/lib/engines-1.1
+
+LDFLAGS += -L$(OPENSSL_LIBRARIES)
+
+PRIMITIVES_PATH = $(ROOT_PATH)/primitive
+PRIMITIVES_LIST = $(UTILS_PATH)/tPublicKey.sml $(PRIMITIVES_PATH)/tConfig.sml \
+					$(PRIMITIVES_PATH)/tBlockInfo.sml $(PRIMITIVES_PATH)/tLedgerInfo.sml \
+					$(PRIMITIVES_PATH)/tVoteData.sml $(PRIMITIVES_PATH)/tVote.sml \
+					$(PRIMITIVES_PATH)/tQuorumCert.sml $(PRIMITIVES_PATH)/tSyncInfo.sml \
+					$(PRIMITIVES_PATH)/tAccount.sml \
+					$(PRIMITIVES_PATH)/tTransactionPayload.sml $(PRIMITIVES_PATH)/tTransactionInfo.sml \
+					$(PRIMITIVES_PATH)/tSignedTransaction.sml \
+					$(PRIMITIVES_PATH)/tBlockData.sml $(PRIMITIVES_PATH)/tBlock.sml \
+					$(PRIMITIVES_PATH)/tStateComputeResult.sml $(PRIMITIVES_PATH)/tExecutedBlock.sml \
+					$(PRIMITIVES_PATH)/tProposalMsg.sml $(PRIMITIVES_PATH)/tVoteMsg.sml \
+					$(PRIMITIVES_PATH)/tSafetyData.sml $(UTILS_PATH)/tComparators.sml \
+					$(UTILS_PATH)/tAccountValidation.sml $(UTILS_PATH)/tHashing.sml \
+					$(PRIMITIVES_PATH)/tKnownNodeInfo.sml $(PRIMITIVES_PATH)/tNodeDataSet.sml \
+					$(PRIMITIVES_PATH)/tConnectedNodeInfo.sml $(PRIMITIVES_PATH)/tConnectedNodeSet.sml \
+					$(PRIMITIVES_PATH)/tNetworkState.sml \
+					$(PRIMITIVES_PATH)/tNetworkData.sml $(PRIMITIVES_PATH)/tTimerData.sml \
+					$(PRIMITIVES_PATH)/tReturnTypes.sml
+
+BUFFER_PATH = $(UTILS_PATH)
+BUFFER_LIST = $(BUFFER_PATH)/tBuffer.sml
+
+LOGGER_PATH = $(UTILS_PATH)/logger
+LOGGER_LIST = $(LOGGER_PATH)/tLoggerLevel.sml $(LOGGER_PATH)/tLogger.sml \
+				$(LOGGER_PATH)/tLoggerInitializers.sml
+
+FFI_SYSTEM_CALLS_PATH = $(ROOT_PATH)/ffi-system-calls
+FFI_SYSTEM_CALLS_LIST = $(FFI_SYSTEM_CALLS_PATH)/tMarshallingHelp.sml \
+							$(FFI_SYSTEM_CALLS_PATH)/tFFICommon.sml \
+							$(FFI_SYSTEM_CALLS_PATH)/tErrno.sml \
+							$(FFI_SYSTEM_CALLS_PATH)/tFd.sml \
+							$(FFI_SYSTEM_CALLS_PATH)/epoll/tEpollOpCode.sml \
+							$(FFI_SYSTEM_CALLS_PATH)/epoll/tEpollEvent.sml \
+							$(FFI_SYSTEM_CALLS_PATH)/epoll/tEpoll.sml \
+							$(FFI_SYSTEM_CALLS_PATH)/tSocket.sml \
+							$(FFI_SYSTEM_CALLS_PATH)/tTimer.sml \
+							$(FFI_SYSTEM_CALLS_PATH)/tTimestamp.sml \
+							$(FFI_SYSTEM_CALLS_PATH)/tFile.sml
+
+TIME_PATH = $(ROOT_PATH)/time
+TIME_LIST = $(TIME_PATH)/tTime.sml
+
+REACTOR_PATH = $(ROOT_PATH)/reactor
+REACTOR_LIST = $(REACTOR_PATH)/tIO.sml $(REACTOR_PATH)/tEventHandlers.sml \
+					$(REACTOR_PATH)/tFDInfo.sml $(REACTOR_PATH)/tReactor.sml
+
+DB_SRC_PATH = $(ROOT_PATH)/storage
+DB_LIST = $(DB_SRC_PATH)/tStorage.sml $(DB_SRC_PATH)/tSafetyReader.sml $(DB_SRC_PATH)/tSafetyWriter.sml
+
+FFI_DIR = $(ROOT_PATH)/fficommon
+FFI_DB_DIR = $(DB_SRC_PATH)/ffi
+DB_ENGINE = $(FFI_DB_DIR)/db
+DB_LIB_NAME = librocksdb.a
+DB_LIB = $(FFI_DB_DIR)/$(DB_LIB_NAME)
+DB_PATH = $(DB_SRC_PATH)/dbstore
+
+TX_ACCUM_PATH = $(ROOT_PATH)/tx-accumulator
+TX_ACCUM_LIST = $(TX_ACCUM_PATH)/tTxAccumulator.sml $(TX_ACCUM_PATH)/tAccumulatorReader.sml $(TX_ACCUM_PATH)/tAccumulatorWriter.sml
+
+TX_STORAGE_PATH = $(ROOT_PATH)/transaction-storage
+TX_STORAGE_LIST = $(TX_STORAGE_PATH)/tTransactionDbKey.sml $(TX_STORAGE_PATH)/tTransactionReader.sml $(TX_STORAGE_PATH)/tTransactionWriter.sml
+
+STATE_TREE_PATH = $(ROOT_PATH)/state-tree
+STATE_TREE_LIST = $(STATE_TREE_PATH)/tRawKey.sml $(STATE_TREE_PATH)/tStateKey.sml $(STATE_TREE_PATH)/tStateTreeChange.sml \
+					$(STATE_TREE_PATH)/tStateNode.sml $(STATE_TREE_PATH)/tStateTreeReader.sml $(STATE_TREE_PATH)/tStateTree.sml \
+					$(STATE_TREE_PATH)/tStateTreeWriter.sml
+
+SMART_CONTRACT_PATH = $(ROOT_PATH)/contract/src
+SMART_CONTRACT_LIST = $(SMART_CONTRACT_PATH)/tType.sml $(SMART_CONTRACT_PATH)/tCoding.sml \
+						$(SMART_CONTRACT_PATH)/tError.sml $(SMART_CONTRACT_PATH)/tContract.sml \
+						$(SMART_CONTRACT_PATH)/tPrettyString.sml $(SMART_CONTRACT_PATH)/tRuntime.sml 
+
+STATE_COMPUTER_PATH = $(ROOT_PATH)/state-computer
+STATE_COMPUTER_LIST = $(STATE_COMPUTER_PATH)/tComputedState.sml $(STATE_COMPUTER_PATH)/tStateComputerNode.sml \
+						$(STATE_COMPUTER_PATH)/tTxExecutionUtil.sml $(STATE_COMPUTER_PATH)/tTxExecutionCheck.sml \
+						$(STATE_COMPUTER_PATH)/tQueryResult.sml $(STATE_COMPUTER_PATH)/tTxExecution.sml \
+						$(STATE_COMPUTER_PATH)/tStateComputer.sml
+
+BLOCK_STORE_PATH = $(ROOT_PATH)/blockstore
+BLOCK_STORE_LIST = $(BLOCK_STORE_PATH)/tBlockTree.sml $(BLOCK_STORE_PATH)/tBlockStoreDbInfo.sml \
+					$(BLOCK_STORE_PATH)/tBlockStoreReader.sml $(BLOCK_STORE_PATH)/tBlockStoreWriter.sml \
+					$(ROOT_PATH)/blockstore/tBlockStore.sml
+
+VALIDATION_PATH = $(UTILS_PATH)
+VALIDATION_LIST = $(VALIDATION_PATH)/tTxValidation.sml $(VALIDATION_PATH)/tValidating.sml
+
+TRANSACTION_POOL_PATH = $(ROOT_PATH)/transaction-pool
+TRANSACTION_POOL_LIST = $(TRANSACTION_POOL_PATH)/tTransactionPool.sml
+
+BLOCK_GENERATOR_PATH = $(ROOT_PATH)/consensus/block-generator
+BLOCK_GENERATOR_LIST = $(BLOCK_GENERATOR_PATH)/tBlockGenerator.sml
+
+SAFETY_PATH = $(ROOT_PATH)/consensus/safety
+SAFETY_LIST = $(SAFETY_PATH)/tUserKey.sml $(SAFETY_PATH)/tSafety.sml
+
+SYNCHRONIZER_PATH = $(ROOT_PATH)/consensus/synchronizer
+SYNCHRONIZER_LIST = $(SYNCHRONIZER_PATH)/tSynchronizer.sml
+
+ROUND_STATE_MANAGER_PATH = $(ROOT_PATH)/consensus/round-state-manager
+ROUND_STATE_MANAGER_LIST = $(ROUND_STATE_MANAGER_PATH)/tPendingVotes.sml \
+							$(ROUND_STATE_MANAGER_PATH)/tRoundState.sml \
+							$(ROUND_STATE_MANAGER_PATH)/tRoundManager.sml
+
+NETWORK_PATH = $(ROOT_PATH)/network
+NETWORK_LIST = $(NETWORK_PATH)/tMessageParser.sml $(NETWORK_PATH)/tConnectionManager.sml
+
+RUNLOOP_PATH = $(ROOT_PATH)/consensus/runloop
+RUNLOOP_LIST = $(RUNLOOP_PATH)/tRunloopType.sml $(RUNLOOP_PATH)/api/tRunloopApiType.sml \
+				$(RUNLOOP_PATH)/tRuntimeState.sml \
+				$(RUNLOOP_PATH)/api/parser/tApiParser.sml $(RUNLOOP_PATH)/api/tRunloopApi.sml \
+				$(RUNLOOP_PATH)/tConcreteEventHandlerHelpers.sml $(RUNLOOP_PATH)/tConcreteEventHandlers.sml \
+				$(RUNLOOP_PATH)/tRunloop.sml
+
+INITIALIZATION_PATH = $(ROOT_PATH)/initialize
+INITIALIZATION_LIST = $(INITIALIZATION_PATH)/tInitialize.sml
+
+MAIN_LIST = $(ROOT_PATH)/main.sml
+
+.PHONY: all
+all: $(DB_LIB) Main.cake
+
+ALLDIRS = $(UTILS_PATH) $(CRYPTO_PATH) $(ENGINE_DIR) $(PRIMITIVES_PATH) $(BUFFER_PATH) $(LOGGER_PATH) $(FFI_SYSTEM_CALLS_PATH) $(TIME_PATH) $(REACTOR_PATH) $(TX_ACCUM_PATH) $(TX_STORAGE_PATH) $(STATE_TREE_PATH) $(SMART_CONTRACT_PATH) $(STATE_COMPUTER_PATH) $(BLOCK_STORE_PATH) $(VALIDATION_PATH) $(TRANSACTION_POOL_PATH) $(BLOCK_GENERATOR_PATH) $(SAFETY_PATH) $(SYNCHRONIZER_PATH) $(ROUND_STATE_MANAGER_PATH) $(NETWORK_PATH) $(RUNLOOP_PATH) $(INITIALIZATION_PATH)
+
+MOREDIRS = $(CRYPTO_PATH)/ffi/ ./contract/src ./consensus/safety
+MAKEDIRS:
+	$(foreach di, $(ALLDIRS), mkdir $(di))
+
+PRINTDIRS:
+	@echo $(ALLDIRS)
+	@echo $(MOREDIRS)
+	
+runloop_ffi.o: $(RUNLOOP_PATH)/ffi/runloop_ffi.c
+	$(CC) $(CFLAGS) -o $@ -c $^
+
+runloop_api_ffi.o: $(RUNLOOP_PATH)/api/ffi/runloop_api_ffi.c
+	$(CC) $(CFLAGS) -o $@ -c $^
+
+$(DB_LIB):
+	git clone https://github.com/facebook/rocksdb.git $(DB_ENGINE);
+	(cd $(DB_ENGINE) && git checkout tags/v6.15.2 && make static_lib ROCKSDB_LITE=1);
+	cp $(DB_ENGINE)/$(DB_LIB_NAME) $(DB_LIB);
+	cp -R $(DB_ENGINE)/include $(FFI_DB_DIR)/include;
+
+db.o: $(FFI_DB_DIR)/db.c
+	$(CC) $(CFLAGS) -I$(FFI_DIR)/include $(LDFLAGS) \
+		-L/usr/local/opt/bzip2/lib -L/usr/local/opt/zlib/lib \
+		-I$(FFI_DB_DIR)/include -o $@ -c $^ -DDB_PATH=\"$(DB_PATH)\"
+
+$(ENGINE_BUILD_DIR)/libgost_core.a: $(ENGINE_DIR)
+	cmake -S $(ENGINE_DIR) -B $(ENGINE_BUILD_DIR) -DOPENSSL_ROOT_DIR=$(OPENSSL_ROOT_DIR) -DOPENSSL_LIBRARIES=$(OPENSSL_LIBRARIES) -DOPENSSL_ENGINES_DIR=$(OPENSSL_ENGINES_DIR);
+	make -C $(ENGINE_BUILD_DIR)
+
+sign_ffi.o: $(CRYPTO_PATH)/ffi/ffi_sign.c
+	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ -c $^ -lcrypto -DENGINE_DIR=\"$(ENGINE_BUILD_DIR)/bin\"
+
+hash_ffi.o: $(CRYPTO_PATH)/ffi/ffi_hash.c
+	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ -c $^ -lcrypto -DENGINE_DIR=\"$(ENGINE_BUILD_DIR)/bin\"
+
+math_ffi.o: $(UTILS_PATH)/math/math_ffi.c
+	$(CC) $(CFLAGS) -o $@ -c $^
+
+bigendian.o: $(ROOT_PATH)/fficommon/basis/bigendian.c
+	$(CC) $(CFLAGS) -o $@ -c $^
+
+file_ffi.o: $(FFI_SYSTEM_CALLS_PATH)/ffi/file.c
+	$(CC) $(CFLAGS) -o $@ -c $^
+
+timestamp_ffi.o: $(FFI_SYSTEM_CALLS_PATH)/ffi/timestamp.c
+	$(CC) $(CFLAGS) -o $@ -c $^
+
+timer_ffi.o: $(FFI_SYSTEM_CALLS_PATH)/ffi/timer.c
+	$(CC) $(CFLAGS) -o $@ -c $^
+
+socket_ffi.o: $(FFI_SYSTEM_CALLS_PATH)/ffi/socket.c
+	$(CC) $(CFLAGS) -o $@ -c $^
+
+epoll_ffi.o: $(FFI_SYSTEM_CALLS_PATH)/ffi/epoll.c
+	$(CC) $(CFLAGS) -o $@ -c $^
+
+fd_ffi.o: $(FFI_SYSTEM_CALLS_PATH)/ffi/fd.c
+	$(CC) $(CFLAGS) -o $@ -c $^
+
+random.o: $(FFI_DIR)/basis/random.c
+	$(CC) $(CFLAGS) -c $(FFI_DIR)/basis/random.c
+
+errno_ffi.o: $(FFI_SYSTEM_CALLS_PATH)/ffi/errno.c
+	$(CC) $(CFLAGS) -o $@ -c $^
+
+basis_ffi.o: $(BASIS)
+	$(CC) $(CFLAGS) -c $(BASIS)
+
+Main.cake: Main.cake.S basis_ffi.o \
+				errno_ffi.o fd_ffi.o epoll_ffi.o socket_ffi.o \
+				timer_ffi.o timestamp_ffi.o file_ffi.o \
+				bigendian.o math_ffi.o hash_ffi.o sign_ffi.o \
+				$(ENGINE_BUILD_DIR)/libgost_core.a db.o \
+				runloop_ffi.o runloop_api_ffi.o random.o
+	$(CC) $(CFLAGS) $(LDFLAGS) \
+		-I$(FFI_DIR)/include -L$(FFI_DB_DIR) -L/usr/local/opt/bzip2/lib \
+		-L/usr/local/opt/zlib/lib -L/usr/local/opt/lz4/lib \
+		"-L$(ENGINE_BUILD_DIR)" -o $@ $^ \
+		-lcrypto -lgost_core -lrocksdb -lz -lzstd -llz4 \
+		-lbz2 -lstdc++ -lm -pthread -ldl -lsnappy -ljemalloc
+
+Main.cake.S: Main.cake.smlByteArr
+	$(CAKEC) < $^ > Main.cake.S
+
+Main.cake.sml: $(UTILS_LIST) $(BUFFER_LIST) $(LOGGER_LIST) $(CRYPTO_LIST) $(PRIMITIVES_LIST) \
+				$(FFI_SYSTEM_CALLS_LIST) $(TIME_LIST) $(REACTOR_LIST) \
+				$(DB_LIST) $(TX_ACCUM_LIST) $(TX_STORAGE_LIST) $(STATE_TREE_LIST) \
+				$(SMART_CONTRACT_LIST) $(STATE_COMPUTER_LIST) $(BLOCK_STORE_LIST) \
+				$(VALIDATION_LIST) $(TRANSACTION_POOL_LIST) $(BLOCK_GENERATOR_LIST) \
+				$(SAFETY_LIST) $(SYNCHRONIZER_LIST) $(ROUND_STATE_MANAGER_LIST) \
+				$(NETWORK_LIST) $(RUNLOOP_LIST) $(INITIALIZATION_LIST) \
+				$(MAIN_LIST)
+	cat $^ > $@
+
+ALLFILES = $(UTILS_LIST) $(BUFFER_LIST) $(LOGGER_LIST) $(CRYPTO_LIST) $(PRIMITIVES_LIST) \
+				$(FFI_SYSTEM_CALLS_LIST) $(TIME_LIST) $(REACTOR_LIST) \
+				$(DB_LIST) $(TX_ACCUM_LIST) $(TX_STORAGE_LIST) $(STATE_TREE_LIST) \
+				$(SMART_CONTRACT_LIST) $(STATE_COMPUTER_LIST) $(BLOCK_STORE_LIST) \
+				$(VALIDATION_LIST) $(TRANSACTION_POOL_LIST) $(BLOCK_GENERATOR_LIST) \
+				$(SAFETY_LIST) $(SYNCHRONIZER_LIST) $(ROUND_STATE_MANAGER_LIST) \
+				$(NETWORK_LIST) $(RUNLOOP_LIST) $(INITIALIZATION_LIST) \
+				$(MAIN_LIST)
+NEWNAMES = $(foreach nm, $(ALLFILES), $(nm:.sml=)Script.sml)
+NEWPROGNAMES = $(foreach nm, $(ALLFILES), $(nm:.sml=)ProgScript.sml)
+#ScriptsCreate:
+#	touch $(NEWNAMES)
+#	touch $(NEWPROGNAMES)
+# %echo $(ALLFILES)
+NEWPROGNAMESNL = $(foreach nm, $(NEWPROGNAMES), $(nm)\\n)
+
+PRINT_ALLFILES:
+	@echo -e $(NEWPROGNAMESNL)
+
+clean: 
+	$(RM) Main.cake Main.cake.S Main.cake.sml basis_ffi.o \
+		errno_ffi.o fd_ffi.o epoll_ffi.o socket_ffi.o \
+		timer_ffi.o timestamp_ffi.o file_ffi.o \
+		bigendian.o math_ffi.o hash_ffi.o sign_ffi.o \
+		db.o runloop_ffi.o runloop_api_ffi.o
+
+.INTERMEDIATE: Main.cake.S Main.cake.sml basis_ffi.o \
+		errno_ffi.o fd_ffi.o epoll_ffi.o socket_ffi.o \
+		timer_ffi.o timestamp_ffi.o file_ffi.o \
+		bigendian.o math_ffi.o hash_ffi.o sign_ffi.o \
+		db.o runloop_ffi.o runloop_api_ffi.o random.o
